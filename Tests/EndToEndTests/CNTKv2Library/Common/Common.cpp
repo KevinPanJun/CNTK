@@ -36,7 +36,7 @@ bool ShouldRunOnCpu()
 {
   const char* p = getenv("TEST_DEVICE");
 
-  return (p == nullptr) || !_stricmp(p, "cpu");
+  return (p == nullptr) || !strcmp(p, "cpu");
 }
 
 bool ShouldRunOnGpu()
@@ -45,7 +45,7 @@ bool ShouldRunOnGpu()
   return false;
 #else
   const char* p = getenv("TEST_DEVICE");
-  return (p == nullptr) || !_stricmp(p, "gpu");
+  return (p == nullptr) || !strcmp(p, "gpu");
 #endif
 }
 
