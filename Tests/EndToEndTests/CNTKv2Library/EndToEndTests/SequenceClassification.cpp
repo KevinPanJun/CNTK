@@ -160,16 +160,18 @@ void TrainLSTMSequenceClassifer()
 {
     fprintf(stderr, "\nTrainLSTMSequenceClassifer..\n");
 
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
         TestLearningRateControl(DeviceDescriptor::GPUDevice(0));
-    else
+
+    if (ShouldRunOnCpu())
         fprintf(stderr, "Cannot run TestLearningRateControl test on CPU device.\n");
 
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
     {
         TrainLSTMSequenceClassifer(DeviceDescriptor::GPUDevice(0), true, false);
         TrainLSTMSequenceClassifer(DeviceDescriptor::GPUDevice(0), false, true);
     }
 
-    TrainLSTMSequenceClassifer(DeviceDescriptor::CPUDevice(), true, false);
+    if (ShouldRunOnCpu())
+        TrainLSTMSequenceClassifer(DeviceDescriptor::CPUDevice(), true, false);
 }

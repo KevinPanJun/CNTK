@@ -102,8 +102,9 @@ void TrainTruncatedLSTMAcousticModelClassifer()
 {
     fprintf(stderr, "\nTrainTruncatedLSTMAcousticModelClassifer..\n");
 
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
         TrainTruncatedLSTMAcousticModelClassifer(DeviceDescriptor::GPUDevice(0), true);
 
-    TrainTruncatedLSTMAcousticModelClassifer(DeviceDescriptor::CPUDevice(), false);
+    if (ShouldRunOnCpu())
+        TrainTruncatedLSTMAcousticModelClassifer(DeviceDescriptor::CPUDevice(), false);
 }

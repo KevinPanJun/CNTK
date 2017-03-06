@@ -114,8 +114,9 @@ void TestFrameMode()
 
     // Create a set of devices.
     std::vector<DeviceDescriptor> devices;
-    devices.push_back(DeviceDescriptor::CPUDevice());
-    if (IsGPUAvailable())
+    if (ShouldRunOnCpu())
+        devices.push_back(DeviceDescriptor::CPUDevice());
+    if (ShouldRunOnGpu())
         devices.push_back(DeviceDescriptor::GPUDevice(0));
 
     // Create different types of loops.

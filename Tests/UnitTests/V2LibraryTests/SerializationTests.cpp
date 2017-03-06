@@ -75,7 +75,7 @@ NDArrayViewPtr CreateNDArrayView()
     auto numAxes = (rng() % maxNumAxes) + 1;
     auto device = DeviceDescriptor::CPUDevice();
 
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
     {
         if (rng() % 2 == 0)
         {
@@ -884,7 +884,7 @@ BOOST_AUTO_TEST_CASE(CheckpointingWithStatefulNodesInCPU)
 
 BOOST_AUTO_TEST_CASE(LearnerSerializationInGPU)
 {
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
     {
         TestLearnerSerialization<float>(5, DeviceDescriptor::GPUDevice(0));
         TestLearnerSerialization<double>(10, DeviceDescriptor::GPUDevice(0));
@@ -893,7 +893,7 @@ BOOST_AUTO_TEST_CASE(LearnerSerializationInGPU)
 
 BOOST_AUTO_TEST_CASE(FunctionSerializationInGPU)
 {
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
     {
         TestFunctionSerialization(DeviceDescriptor::GPUDevice(0));
     }
@@ -901,7 +901,7 @@ BOOST_AUTO_TEST_CASE(FunctionSerializationInGPU)
 
 BOOST_AUTO_TEST_CASE(ModelSerializationDuringTrainingInGPU)
 {
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
     {
         TestModelSerializationDuringTraining(DeviceDescriptor::GPUDevice(0));
     }
@@ -909,20 +909,20 @@ BOOST_AUTO_TEST_CASE(ModelSerializationDuringTrainingInGPU)
 
 BOOST_AUTO_TEST_CASE(CheckpointingInGPU)
 {
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
         TestCheckpointing(DeviceDescriptor::GPUDevice(0));
 }
 
 
 BOOST_AUTO_TEST_CASE(LegacyModelSavingInGPU)
 {
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
         TestLegacyModelSaving(DeviceDescriptor::GPUDevice(0));
 }
 
 BOOST_AUTO_TEST_CASE(CheckpointingWithStatefulNodesInGPU)
 {
-    if (IsGPUAvailable())
+    if (ShouldRunOnGpu())
         TestCheckpointingWithStatefulNodes(DeviceDescriptor::GPUDevice(0));
 }
 
