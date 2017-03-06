@@ -320,16 +320,15 @@ namespace CNTK
         // if uids turn out to be too fragile, this can be easily changed to a vector
         // of parameters, so that in restore we don't have to lookup based on uids, 
         // and simply restore parameters one by one in the original (dfs) order.
+        std::vector<DictionaryValue> serializedSmoothedGradients(Parameters().size());
+        size_t i = 0;
         for (const auto& parameter : Parameters())
         {
-            if (checkpoint.Contains(parameter.Uid()))
-            {
-                LogicError("Parameter uids must be unique");
-            }
-
             const auto& smoothedGradientValue = m_smoothedGradientValues.at(parameter);
-            checkpoint[parameter.Uid()] = *smoothedGradientValue;
+            serializedSmoothedGradients[i++] = *smoothedGradientValue;
         }
+
+        checkpoint[smoothedGradientsKey] = serializedSmoothedGradients;
 
         return checkpoint;
     }
@@ -338,7 +337,12 @@ namespace CNTK
     {
         static const vector<std::wstring> s_requiredDictionaryKeys = { typeKey, sampleCountKey, minibatchCountKey, learningRateScheduleKey };
 
-        ValidateDictionary<LearnerBase>(checkpoint, s_requiredDictionaryKeys, s_learnerTypeValue, CurrentVersion());
+        auto version = ValidateDictionary<LearnerBase>(checkpoint, s_requiredDictionaryKeys, s_learnerTypeValue, CurrentVersion());
+
+        if (version >= 2) 
+        {
+            ValidateDictionary<LearnerBase>(checkpoint, { smoothedGradientsKey }, s_learnerTypeValue, CurrentVersion());
+        }
 
         m_sampleCount = checkpoint[sampleCountKey].Value<size_t>();
         m_minibatchCount = checkpoint[minibatchCountKey].Value<size_t>();
@@ -346,29 +350,47 @@ namespace CNTK
         // The one given at construction time or the one loaded from a checkpoint?
         m_learningRateSchedule = TrainingParameterSchedule<double>::Deserialize(checkpoint[learningRateScheduleKey].Value<Dictionary>());
 
-        const auto parameters = Parameters();
+        const auto& parameters = Parameters();
 
-        for (const auto& parameter : parameters)
+        auto getSmoothedGradValue = [version, &checkpoint] (size_t i, const wstring& uid) -> const DictionaryValue&
         {
-            if (!checkpoint.Contains(parameter.Uid()))
+            if (version >= 2)
             {
-                LogicError("Checkpoint does not contain state for parameter %ls", parameter.Uid().c_str());
+                const auto& values = checkpoint[smoothedGradientsKey].Value<vector<DictionaryValue>>();
+                
+                if (values.size() <= i)
+                {
+                    LogicError("Checkpoint does not contain smoothed gradient data for parameter %ls", uid.c_str());
+                }
+
+                return values.at(i);
             }
+            
+            if (!checkpoint.Contains(uid))
+            {
+                LogicError("Checkpoint does not contain smoothed gradient data for parameter %ls", uid.c_str());
+            }
+            return checkpoint[uid];
+        };
+
+        for (auto i = 0; i < parameters.size(); i++)
+        {
+            const auto& parameter = parameters.at(i);
+            const auto& uid = parameter.Uid();
+            const NDArrayView& checkpointedValue = getSmoothedGradValue(i, uid).Value<NDArrayView>();
 
             const auto& smoothedGradientValue = m_smoothedGradientValues.at(parameter);
-
-            const NDArrayView& checkpointedValue = checkpoint[parameter.Uid()].Value<NDArrayView>();
 
             if (smoothedGradientValue->GetDataType() != checkpointedValue.GetDataType())
             {
                 LogicError("A value restored from a checkpoint for the smoothed gradient data type for parameter %ls does not match the expected value",
-                           parameter.Uid().c_str());
+                           uid.c_str());
             }
 
             if (smoothedGradientValue->Shape() != checkpointedValue.Shape())
             {
                 LogicError("A value restored from a checkpoint for the smoothed gradient shape for parameter %ls does not match the expected value",
-                           parameter.Uid().c_str());
+                           uid.c_str());
             }
 
             smoothedGradientValue->CopyFrom(checkpointedValue);
